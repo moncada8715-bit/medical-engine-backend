@@ -1,14 +1,15 @@
 const { OpenAI } = require('openai');
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
 /**
  * Uses OpenAI to extract structured clinical entities from the clinical note.
  * Does NOT generate ICD codes, only extracts facts to be fed into the deterministic engine.
  */
 async function extractClinicalEntities(note) {
+  // Initialize client inside the function so it reads the env variable AT RUNTIME, preventing boot crashes on Render.
+  const client = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
+
   const prompt = `
     You are an expert clinical documentation specialist. 
     Analyze the following clinical note and extract the core clinical entities. 
@@ -29,7 +30,7 @@ async function extractClinicalEntities(note) {
   `;
 
   try {
-    const response = await openai.chat.completions.create({
+    const response = await client.chat.completions.create({
       model: 'gpt-4o', // Assuming access to gpt-4o, adjust to gpt-3.5-turbo or gpt-4 as needed
       messages: [{ role: 'user', content: prompt }],
       response_format: { type: 'json_object' },
