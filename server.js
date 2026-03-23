@@ -4,22 +4,17 @@ const cors = require('cors');
 
 const casesRouter = require('./src/routes/cases');
 const analyzeRouter = require('./src/routes/analyze');
+const assistantRouter = require('./src/routes/assistant');
+const academicRouter = require('./src/routes/academic');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// API Key Middleware
-const authenticateKey = (req, res, next) => {
-  const apiKey = req.headers['x-api-key'];
-  if (!apiKey || apiKey !== process.env.API_KEY) {
-    return res.status(401).json({ error: 'Unauthorized: Invalid API Key' });
-  }
-  next();
-};
-
-app.use('/cases', authenticateKey, casesRouter);
-app.use('/analyze-case', authenticateKey, analyzeRouter);
+app.use('/cases', casesRouter);
+app.use('/analyze-case', analyzeRouter);
+app.use('/assistant', assistantRouter);
+app.use('/academic', academicRouter);
 
 // Health check
 app.get('/', (req, res) => {

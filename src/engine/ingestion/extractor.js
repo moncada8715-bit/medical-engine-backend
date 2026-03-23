@@ -1,0 +1,62 @@
+const { OpenAI } = require('openai');
+
+/**
+ * Uses OpenAI to extract structured clinical entities from the clinical note.
+ * Does NOT generate ICD codes, only extracts facts to be fed into the deterministic engine.
+ */
+async function extractClinicalEntities(note) {
+  // Initialize client inside the function so it reads the env variable AT RUNTIME, preventing boot crashes on Render.
+  const client = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
+
+  const prompt = `
+    You are an expert clinical documentation specialist. 
+    Analyze the following clinical note and extract the core clinical entities. 
+    Be thorough: extract ALL confirmed diagnoses, signs/symptoms, medical procedures (e.g. office visits, surgeries), and supplies/medications mentioned.
+    If a level of service is mentioned (e.g. Level 3 office visit), include it in procedures.
+    
+    Structure your response as a JSON object with the following schema:
+    {
+      "confirmed_diagnoses": ["string"],
+      "symptoms": ["string"],
+      "procedures": ["string"],
+      "supplies": ["string"],
+      "laterality": ["left", "right", "bilateral", "unspecified", "N/A"],
+      "encounter": "initial" | "subsequent" | "sequela" | "unspecified",
+      "missing_specificity": boolean,
+      "academic_explanation": "brief clinical summary highlighting what was extracted and why"
+    }
+
+    Clinical Note:
+    "${note}"
+  `;
+
+  try {
+    const response = await client.chat.completions.create({
+      model: 'gpt-4o', // Assuming access to gpt-4o, adjust to gpt-3.5-turbo or gpt-4 as needed
+      messages: [{ role: 'user', content: prompt }],
+      response_format: { type: 'json_object' },
+      temperature: 0.0,
+    });
+
+    const parsedResponse = JSON.parse(response.choices[0].message.content);
+    return {
+      confirmed_diagnoses: parsedResponse.confirmed_diagnoses || [],
+      symptoms: parsedResponse.symptoms || [],
+      procedures: parsedResponse.procedures || [],
+      supplies: parsedResponse.supplies || [],
+      laterality: parsedResponse.laterality || 'unspecified',
+      encounter: parsedResponse.encounter || 'unspecified',
+      missing_specificity: typeof parsedResponse.missing_specificity === 'boolean' ? parsedResponse.missing_specificity : false,
+      academic_explanation: parsedResponse.academic_explanation || 'No explanation provided.'
+    };
+  } catch (error) {
+    console.error('Extraction Error:', error);
+    throw new Error('Failed to extract clinical entities from note.');
+  }
+}
+
+module.exports = {
+  extractClinicalEntities
+};
