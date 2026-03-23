@@ -2,7 +2,7 @@
   "name": "backend",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js"
@@ -16,8 +16,10 @@
     "csv-parser": "^3.2.0",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
-    "fs": "^0.0.1-security",
     "openai": "^6.32.0",
     "pg": "^8.20.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
